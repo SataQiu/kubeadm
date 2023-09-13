@@ -131,3 +131,14 @@ func (h *AlterHelper) Commit(containerID, targetImage string) error {
 	}
 	return errors.Errorf("unknown cri: %s", h.cri)
 }
+
+// GetSandboxImage returns the sandbox image used by the container runtime
+func (h *AlterHelper) GetSandboxImage(bc *bits.BuildContext) (string, error) {
+	switch h.cri {
+	case status.ContainerdRuntime:
+		return containerd.GetSandboxImage(bc)
+	case status.DockerRuntime:
+		return "", errors.Errorf("unsupported for Docker container runtime")
+	}
+	return "", errors.Errorf("unknown cri: %s", h.cri)
+}

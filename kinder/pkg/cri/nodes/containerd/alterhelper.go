@@ -19,6 +19,7 @@ package containerd
 import (
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -119,4 +120,25 @@ func Commit(containerID, targetImage string) error {
 	cmd.Stderr = os.Stderr
 
 	return cmd.Run()
+}
+
+// GetSandboxImage returns the sandbox image used by the container runtime
+func GetSandboxImage(bc *bits.BuildContext) (string, error) {
+	cmd := "crictl -D=false info -o go-template --template {{.config.sandboxImage}}"
+	out, err := bc.CombinedOutputLinesInContainer("bash", "-c", cmd)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to detect sandbox image of container runtime")
+	}
+
+	if len(out) != 1 {
+		return "", errors.Errorf("expected the output of command %q to have 1 line, got: %v", cmd, out)
+	}
+
+	sandboxImage := strings.TrimSpace(out[0])
+	if len(sandboxImage) > 0 {
+		log.Infof("detected sandbox image is %q", sandboxImage)
+		return sandboxImage, nil
+	}
+
+	return "", errors.Errorf("the detected sandbox image is empty")
 }

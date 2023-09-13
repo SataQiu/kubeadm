@@ -361,6 +361,23 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 			return err
 		}
 
+		// detect and append container runtime sandbox image
+		sandboxImage, err := alterHelper.GetSandboxImage(bc)
+		if err == nil {
+			found := false
+			for _, image := range images {
+				if image == sandboxImage {
+					found = true
+					break
+				}
+			}
+			if !found {
+				images = append(images, sandboxImage)
+			}
+		} else {
+			log.Warnf("failed to detect the sandbox image for local container runtime, %v", err)
+		}
+
 		if err := pullImages(alterHelper, bc, images, filepath.Join(initPath, "images"), containerID); err != nil {
 			return err
 		}
